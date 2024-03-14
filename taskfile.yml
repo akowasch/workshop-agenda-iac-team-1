@@ -1,0 +1,127 @@
+version: '3'
+
+silent: true
+
+tasks:
+
+  ##############################################################################
+  # Pre-Checks
+
+  check-terraform:
+    desc: Check terraform CLI availability
+    preconditions:
+      - sh: which terraform
+        msg: "terraform CLI not found"
+    internal: true
+    run: once
+
+  check-checkov:
+    desc: Check checkov CLI availability
+    preconditions:
+      - sh: which checkov
+        msg: "checkov CLI not found"
+    internal: true
+    run: once
+
+  check-terraform-docs:
+    desc: Check terraform-docs CLI availability
+    preconditions:
+      - sh: which terraform-docs
+        msg: "terraform-docs CLI not found"
+    internal: true
+    run: once
+
+  check-az:
+    desc: Check az CLI availability
+    preconditions:
+      - sh: which az
+        msg: "az CLI not found"
+    internal: true
+    run: once
+
+  check-pre-commit:
+    desc: Check pre-commit CLI availability
+    preconditions:
+      - sh: which pre-commit
+        msg: "pre-commit CLI not found"
+    internal: true
+    run: once
+
+  ##############################################################################
+  # Terraform
+
+  init:
+    desc: Initialize Terraform workspace
+    deps: [check-terraform]
+    cmds:
+      - terraform init -upgrade
+      - terraform providers lock
+          -platform=linux_amd64
+          -platform=linux_arm64
+          -platform=darwin_amd64
+          -platform=darwin_arm64
+          -platform=windows_amd64
+
+  fmt:
+    desc: Format Terraform configuration
+    deps: [check-terraform]
+    cmds:
+      - terraform fmt -recursive
+
+  validate:
+    desc: Validate Terraform configuration
+    deps: [check-terraform, fmt]
+    cmds:
+      - terraform validate
+
+  plan:
+    desc: Plan Terraform configuration
+    deps: [check-terraform, fmt]
+    cmds:
+      - terraform plan
+
+  apply:
+    desc: Apply Terraform configuration
+    deps: [check-terraform, fmt]
+    cmds:
+      - terraform apply
+
+  ##############################################################################
+  # Checkov
+
+  analyse:
+    desc: Analyse Terraform configuration
+    deps: [check-terraform, check-checkov, fmt]
+    cmds:
+      - terraform plan -refresh=false -out=plan.bin
+      - terraform show -json plan.bin > plan.json
+      - checkov plan.json --soft-fail
+      - defer: rm -rf plan.bin plan.json
+
+  ##############################################################################
+  # Terraform Docs
+
+  docs:
+    desc: Generate OpenTofu documentation
+    deps: [check-terraform-docs, fmt]
+    cmds:
+      - terraform-docs modules
+      - defer: rm -rf modules/README.md
+
+  ##############################################################################
+  # Azure
+
+  login:
+    desc: Login to Azure
+    deps: [check-az]
+    cmds:
+      - az login --tenant "${AZURE_TENANT_ID}
+
+  ##############################################################################
+  # Pre-Commit Hooks
+
+  pre-commit:
+    desc: Install pre-commit hooks
+    deps: [check-pre-commit]
+    cmds:
+      - pre-commit install
