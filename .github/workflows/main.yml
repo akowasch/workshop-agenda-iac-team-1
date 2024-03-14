@@ -1,0 +1,336 @@
+name: Run Terraform
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    types: [ opened, synchronize, edited, reopened, labeled, unlabeled ]
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  id-token: write
+  contents: write
+  pull-requests: write
+  security-events: write
+
+jobs:
+  analyse-iac-checkov:
+    name: Analyse IaC (Checkov)
+    runs-on: ubuntu-22.04
+    steps:
+
+    - name: Checkout Code
+      # https://github.com/actions/checkout/releases
+      uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+
+    ############################################################################
+
+    - name: Run Checkov vulnerability scanner (IaC)
+      # https://github.com/bridgecrewio/checkov-action/tags
+      uses: bridgecrewio/checkov-action@15d3f5064110b49bc0bb65a6cb30c5667703ae22 # v12.2699.0
+      with:
+        framework: terraform
+        output_format: cli,sarif
+        output_file_path: console,checkov-results.sarif
+        soft_fail: true
+
+    - name: Upload Checkov scan results (IaC)
+      # https://github.com/github/codeql-action/tags
+      uses: github/codeql-action/upload-sarif@1b1aada464948af03b950897e5eb522f92603cc2 # v3.24.9
+      with:
+        sarif_file: checkov-results.sarif
+        category: checkov
+
+  ##############################################################################
+
+  analyse-fs-trivy:
+    name: Analyse FS (Trivy)
+    runs-on: ubuntu-22.04
+    steps:
+
+    - name: Checkout Code
+      # https://github.com/actions/checkout/releases
+      uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+
+    ############################################################################
+
+    - name: Run Trivy vulnerability scanner (FS)
+      # https://github.com/aquasecurity/trivy-action/releases
+      uses: aquasecurity/trivy-action@062f2592684a31eb3aa050cc61e7ca1451cecd3d # v0.18.0
+      with:
+        scan-type: fs
+        format: sarif
+        output: trivy-fs-results.sarif
+        ignore-unfixed: true
+        severity: CRITICAL,HIGH
+
+    - name: Upload Trivy scan results (Git repo)
+      # https://github.com/github/codeql-action/tags
+      uses: github/codeql-action/upload-sarif@1b1aada464948af03b950897e5eb522f92603cc2 # v3.24.9
+      with:
+        sarif_file: 'trivy-fs-results.sarif'
+        category: trivy-fs
+
+  ##############################################################################
+
+  analyse-iac-trivy:
+    name: Analyse IaC (Trivy)
+    runs-on: ubuntu-22.04
+    steps:
+
+    - name: Checkout Code
+      # https://github.com/actions/checkout/releases
+      uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+
+    ############################################################################
+
+    - name: Run Trivy vulnerability scanner (IaC)
+      # https://github.com/aquasecurity/trivy-action/releases
+      uses: aquasecurity/trivy-action@062f2592684a31eb3aa050cc61e7ca1451cecd3d # v0.18.0
+      with:
+        scan-type: config
+        hide-progress: false
+        format: sarif
+        output: trivy-iac-results.sarif
+        ignore-unfixed: true
+        severity: CRITICAL,HIGH
+
+    - name: Upload Trivy scan results (IaC)
+      # https://github.com/github/codeql-action/tags
+      uses: github/codeql-action/upload-sarif@1b1aada464948af03b950897e5eb522f92603cc2 # v3.24.9
+      with:
+        sarif_file: trivy-iac-results.sarif
+        category: trivy-iac
+
+  ##############################################################################
+
+  generate-sbom-trivy:
+    name: Generate SBOM (Trivy)
+    runs-on: ubuntu-22.04
+    steps:
+
+    - name: Checkout Code
+      # https://github.com/actions/checkout/releases
+      uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+
+    ############################################################################
+
+    - name: Run Trivy report generator (SBOM)
+      # https://github.com/aquasecurity/trivy-action/releases
+      uses: aquasecurity/trivy-action@062f2592684a31eb3aa050cc61e7ca1451cecd3d # v0.18.0
+      with:
+        scan-type: fs
+        format: github
+        output: dependency-results.sbom.json
+        image-ref: '.'
+        github-pat: "${{ secrets.GITHUB_TOKEN }}"
+
+    ############################################################################
+
+    - name: Upload Trivy report (SBOM)
+      # https://github.com/actions/upload-artifact/releases
+      uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
+      with:
+        name: trivy-sbom-report
+        path: '${{ github.workspace }}/dependency-results.sbom.json'
+        retention-days: 20 # 90 is the default
+
+  ##############################################################################
+
+  # analyse-iac-tfsec:
+  #   name: Analyse IaC (tfsec)
+  #   runs-on: ubuntu-22.04
+  #   steps:
+
+  #   - name: Checkout Code
+  #     # https://github.com/actions/checkout/releases
+  #     uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+
+  #   ############################################################################
+
+  #   - name: Run tfsec vulnerability scanner (IaC)
+  #     # https://github.com/aquasecurity/tfsec-pr-commenter-action/releases
+  #     uses: aquasecurity/tfsec-pr-commenter-action@7a44c5dcde5dfab737363e391800629e27b6376b # v1.3.1
+  #     with:
+  #       tfsec_args: --soft-fail
+  #       github_token: "${{ github.token }}"
+
+  ##############################################################################
+
+  prepare:
+    if: |
+      github.event_name == 'pull_request' &&
+      !contains(github.event.pull_request.labels.*.name, 'review')
+    name: Deploy Dev / plan
+    needs:
+      - analyse-iac-checkov
+      - analyse-fs-trivy
+      - analyse-iac-trivy
+      - generate-sbom-trivy
+    environment: dev
+    runs-on: ubuntu-22.04
+    concurrency:
+      group: dev
+      cancel-in-progress: false
+    env:
+      ARM_CLIENT_ID: "${{ vars.AZURE_CLIENT_ID }}"
+      ARM_SUBSCRIPTION_ID: "${{ vars.AZURE_SUBSCRIPTION_ID }}"
+      ARM_TENANT_ID: "${{ vars.AZURE_TENANT_ID }}"
+      ARM_USE_OIDC: true
+      ARM_USE_AZUREAD: true
+    steps:
+
+    - name: Checkout Code
+      # https://github.com/actions/checkout/releases
+      uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+
+    ############################################################################
+
+    - name: Setup Terraform
+      # https://github.com/hashicorp/setup-terraform/releases
+      uses: hashicorp/setup-terraform@a1502cd9e758c50496cc9ac5308c4843bcd56d36 # v3.0.0
+      with:
+        terraform_version: "1.7.5"
+
+    - name: Check Terraform formatting
+      id: fmt
+      run: |
+        terraform fmt -check
+
+    - name: Initialize Terraform working directory
+      id: init
+      run: |
+        terraform init \
+          -lockfile=readonly \
+          -backend-config="resource_group_name=${{ vars.BACKEND_AZURE_RESOURCE_GROUP_NAME }}" \
+          -backend-config="storage_account_name=${{ vars.BACKEND_AZURE_STORAGE_ACCOUNT_NAME }}" \
+          -backend-config="container_name=${{ vars.BACKEND_AZURE_STORAGE_ACCOUNT_CONTAINER_NAME }}" \
+          -backend-config="key=${{ contains(github.event.pull_request.labels.*.name, 'review') && github.head_ref || 'terraform' }}.tfstate"
+
+    - name: Validate Terraform configurations
+      id: validate
+      run: |
+        terraform validate
+
+    - name: Create Terraform execution plan
+      id: plan
+      run: |
+        terraform plan \
+          -input=false \
+          -var "resource_group_name=${{vars.AZURE_RESOURCE_GROUP_NAME}}"
+      continue-on-error: true
+
+    - name: Update Pull Request
+      # https://github.com/actions/github-script/releases
+      uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+      env:
+        PLAN: "terraform\n${{ steps.plan.outputs.stdout }}"
+      with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        script: |
+          const output = `#### Terraform Format and Style 🖌\`${{ steps.fmt.outcome }}\`
+          #### Terraform Initialization ⚙️\`${{ steps.init.outcome }}\`
+          #### Terraform Validation 🤖\`${{ steps.validate.outcome }}\`
+          <details><summary>Validation Output</summary>
+
+          \`\`\`\n
+          ${{ steps.validate.outputs.stdout }}
+          \`\`\`
+
+          </details>
+
+          #### Terraform Plan 📖\`${{ steps.plan.outcome }}\`
+
+          <details><summary>Show Plan</summary>
+
+          \`\`\`\n
+          ${process.env.PLAN}
+          \`\`\`
+
+          </details>
+
+          *Pushed by: @${{ github.actor }}, Action: \`${{ github.event_name }}\`*`;
+
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: output
+          })
+
+    - name: Exit pipeline on Terraform plan failure
+      if: steps.plan.outcome == 'failure'
+      run: exit 1
+
+  ##############################################################################
+
+  deploy-review:
+    if: |
+      github.event_name == 'pull_request' &&
+      contains(github.event.pull_request.labels.*.name, 'review')
+    name: Deploy Review
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: dynamic
+      backend-key: "${{ github.head_ref }}"
+
+  ##############################################################################
+
+  destroy-review:
+    if: |
+      github.event_name == 'pull_request' && (
+        (
+          github.event.action == 'closed' &&
+          contains(github.event.pull_request.labels.*.name, 'review')
+        ) || (
+          github.event.action == 'unlabeled' &&
+          github.event.label.name == 'review'
+        )
+      )
+    name: Destroy Review
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: dynamic
+      backend-key: "${{ github.head_ref }}"
+      action: destroy
+
+  ##############################################################################
+
+  deploy-dev:
+    if: |
+      contains('["push", "workflow_dispatch"]', github.event_name) &&
+      github.ref == 'refs/heads/main'
+    name: Deploy Dev
+    needs:
+      - analyse-iac-checkov
+      - analyse-fs-trivy
+      - analyse-iac-trivy
+      - generate-sbom-trivy
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: dev
+
+  ##############################################################################
+
+  deploy-test:
+    if: |
+      contains('["push", "workflow_dispatch"]', github.event_name) &&
+      github.ref == 'refs/heads/main'
+    name: Deploy Test
+    needs: deploy-dev
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: test
+
+  ##############################################################################
+
+  deploy-prod:
+    if: |
+      contains('["push", "workflow_dispatch"]', github.event_name) &&
+      github.ref == 'refs/heads/main'
+    name: Deploy Prod
+    needs: deploy-test
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: prod
