@@ -69,8 +69,8 @@ jobs:
         severity: 'CRITICAL,HIGH'
 
     - name: Upload Trivy scan results (IaC)
-      # https://github.com/github/codeql-action/releases
-      uses: github/codeql-action/upload-sarif@v2.16.4
+      # https://github.com/github/codeql-action/tags
+      uses: github/codeql-action/upload-sarif@v3.24.9
       with:
         sarif_file: 'trivy-results-config.sarif'
 
