@@ -3,12 +3,12 @@ terraform {
     azurerm = {
       # https://github.com/hashicorp/terraform-provider-azurerm/releases
       source  = "hashicorp/azurerm"
-      version = "3.95.0"
+      version = "3.97.1"
     }
     github = {
       # https://github.com/integrations/terraform-provider-github/releases
       source  = "integrations/github"
-      version = "6.1.0"
+      version = "6.2.0"
     }
   }
 }

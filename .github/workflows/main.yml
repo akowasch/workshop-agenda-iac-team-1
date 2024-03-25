@@ -1,10 +1,16 @@
 name: Run Terraform
+
 on:
   push:
-    branches: [ "main" ]
+    branches: [ main ]
   pull_request:
-    branches: [ "main" ]
+    types: [ opened, synchronize, edited, reopened ]
+    branches: [ main ]
   workflow_dispatch:
+
+concurrency:
+  group: "${{ vars.ENVIRONMENT }}"
+  cancel-in-progress: false
 
 permissions:
   id-token: write
@@ -15,16 +21,14 @@ permissions:
 jobs:
   analysis:
     if: github.event_name == 'pull_request'
-    name: Analyse the Terraform
-    environment: dev
+    name: Analyse Configuration
+    environment: ${{ contains(github.event.pull_request.labels.*.name, 'dynamic') && 'dynamic'|| 'dev' }}
     runs-on: ubuntu-22.04
     env:
       ARM_CLIENT_ID: "${{ vars.AZURE_CLIENT_ID }}"
       ARM_SUBSCRIPTION_ID: "${{ vars.AZURE_SUBSCRIPTION_ID }}"
       ARM_TENANT_ID: "${{ vars.AZURE_TENANT_ID }}"
     steps:
-
-    ############################################################################
 
     - name: Checkout Code
       # https://github.com/actions/checkout/releases
@@ -102,9 +106,11 @@ jobs:
     - name: Initialize Terraform working directory
       run: |
         terraform init \
-          -backend-config="resource_group_name=${{vars.BACKEND_AZURE_RESOURCE_GROUP_NAME}}" \
-          -backend-config="storage_account_name=${{vars.BACKEND_AZURE_STORAGE_ACCOUNT_NAME}}" \
-          -backend-config="container_name=${{vars.BACKEND_AZURE_STORAGE_ACCOUNT_CONTAINER_NAME}}"
+          -lockfile=readonly \
+          -backend-config="resource_group_name=${{ vars.BACKEND_AZURE_RESOURCE_GROUP_NAME }}" \
+          -backend-config="storage_account_name=${{ vars.BACKEND_AZURE_STORAGE_ACCOUNT_NAME }}" \
+          -backend-config="container_name=${{ vars.BACKEND_AZURE_STORAGE_ACCOUNT_CONTAINER_NAME }}" \
+          -backend-config="key=${{ contains(github.event.pull_request.labels.*.name, 'dynamic') && vars.GITHUB_HEAD_REF || 'terraform' }}.tfstate"
 
     - name: Validate Terraform configurations
       run: |
@@ -164,6 +170,49 @@ jobs:
 
   ##############################################################################
 
+  deploy-to-dynamic:
+    if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'dynamic')
+    name: Deploy to Dynamic
+    environment: dynamic
+    runs-on: ubuntu-22.04
+    env:
+      ARM_CLIENT_ID: "${{ vars.AZURE_CLIENT_ID }}"
+      ARM_SUBSCRIPTION_ID: "${{ vars.AZURE_SUBSCRIPTION_ID }}"
+      ARM_TENANT_ID: "${{ vars.AZURE_TENANT_ID }}"
+      ARM_USE_AZUREAD: true
+    steps:
+
+    - name: Checkout Code
+      # https://github.com/actions/checkout/releases
+      uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+
+      ##############################################################################
+
+    - name: Setup Terraform
+      # https://github.com/hashicorp/setup-terraform/releases
+      uses: hashicorp/setup-terraform@a1502cd9e758c50496cc9ac5308c4843bcd56d36 # v3.0.0
+      with:
+        terraform_version: "1.7.5"
+
+    - name: Initialize Terraform working directory
+      run: |
+        terraform init \
+          -lockfile=readonly \
+          -backend-config="resource_group_name=${{vars.BACKEND_AZURE_RESOURCE_GROUP_NAME}}" \
+          -backend-config="storage_account_name=${{vars.BACKEND_AZURE_STORAGE_ACCOUNT_NAME}}" \
+          -backend-config="container_name=${{vars.BACKEND_AZURE_STORAGE_ACCOUNT_CONTAINER_NAME}}" \
+          -backend-config="key=${{ vars.GITHUB_HEAD_REF }}.tfstate"
+
+    - name: Apply Terraform execution plan
+      run: |
+        terraform apply \
+          -auto-approve \
+          -no-color \
+          -input=false \
+          -var "resource_group_name=${{vars.AZURE_RESOURCE_GROUP_NAME}}"
+
+  ##############################################################################
+
   deploy-to-dev:
     if: github.event_name != 'pull_request'
     name: Deploy to Dev
@@ -174,8 +223,8 @@ jobs:
       ARM_SUBSCRIPTION_ID: "${{ vars.AZURE_SUBSCRIPTION_ID }}"
       ARM_TENANT_ID: "${{ vars.AZURE_TENANT_ID }}"
       ARM_USE_AZUREAD: true
-
     steps:
+
     - name: Checkout Code
       # https://github.com/actions/checkout/releases
       uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
@@ -191,14 +240,18 @@ jobs:
     - name: Initialize Terraform working directory
       run: |
         terraform init \
+          -lockfile=readonly \
           -backend-config="resource_group_name=${{vars.BACKEND_AZURE_RESOURCE_GROUP_NAME}}" \
           -backend-config="storage_account_name=${{vars.BACKEND_AZURE_STORAGE_ACCOUNT_NAME}}" \
-          -backend-config="container_name=${{vars.BACKEND_AZURE_STORAGE_ACCOUNT_CONTAINER_NAME}}"
+          -backend-config="container_name=${{vars.BACKEND_AZURE_STORAGE_ACCOUNT_CONTAINER_NAME}}" \
+          -backend-config="key=terraform.tfstate"
 
     - name: Apply Terraform execution plan
       run: |
         terraform apply \
           -auto-approve \
+          -no-color \
+          -input=false \
           -var "resource_group_name=${{vars.AZURE_RESOURCE_GROUP_NAME}}"
 
   ##############################################################################
@@ -214,8 +267,8 @@ jobs:
       ARM_SUBSCRIPTION_ID: "${{ vars.AZURE_SUBSCRIPTION_ID }}"
       ARM_TENANT_ID: "${{ vars.AZURE_TENANT_ID }}"
       ARM_USE_AZUREAD: true
-
     steps:
+
     - name: Checkout Code
       # https://github.com/actions/checkout/releases
       uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
@@ -231,14 +284,18 @@ jobs:
     - name: Initialize Terraform working directory
       run: |
         terraform init \
+          -lockfile=readonly \
           -backend-config="resource_group_name=${{vars.BACKEND_AZURE_RESOURCE_GROUP_NAME}}" \
           -backend-config="storage_account_name=${{vars.BACKEND_AZURE_STORAGE_ACCOUNT_NAME}}" \
-          -backend-config="container_name=${{vars.BACKEND_AZURE_STORAGE_ACCOUNT_CONTAINER_NAME}}"
+          -backend-config="container_name=${{vars.BACKEND_AZURE_STORAGE_ACCOUNT_CONTAINER_NAME}}" \
+          -backend-config="key=terraform.tfstate"
 
     - name: Apply Terraform execution plan
       run: |
         terraform apply \
           -auto-approve \
+          -no-color \
+          -input=false \
           -var "resource_group_name=${{vars.AZURE_RESOURCE_GROUP_NAME}}"
 
   ##############################################################################
@@ -254,8 +311,8 @@ jobs:
       ARM_SUBSCRIPTION_ID: "${{ vars.AZURE_SUBSCRIPTION_ID }}"
       ARM_TENANT_ID: "${{ vars.AZURE_TENANT_ID }}"
       ARM_USE_AZUREAD: true
-
     steps:
+
     - name: Checkout Code
       # https://github.com/actions/checkout/releases
       uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
@@ -271,12 +328,16 @@ jobs:
     - name: Initialize Terraform working directory
       run: |
         terraform init \
+          -lockfile=readonly \
           -backend-config="resource_group_name=${{vars.BACKEND_AZURE_RESOURCE_GROUP_NAME}}" \
           -backend-config="storage_account_name=${{vars.BACKEND_AZURE_STORAGE_ACCOUNT_NAME}}" \
-          -backend-config="container_name=${{vars.BACKEND_AZURE_STORAGE_ACCOUNT_CONTAINER_NAME}}"
+          -backend-config="container_name=${{vars.BACKEND_AZURE_STORAGE_ACCOUNT_CONTAINER_NAME}}" \
+          -backend-config="key=terraform.tfstate"
 
     - name: Apply Terraform execution plan
       run: |
         terraform apply \
           -auto-approve \
+          -no-color \
+          -input=false \
           -var "resource_group_name=${{vars.AZURE_RESOURCE_GROUP_NAME}}"
