@@ -81,7 +81,7 @@ jobs:
         format: github
         output: dependency-results.sbom.json
         image-ref: '.'
-        github-pat: ${{ secrets.GITHUB_TOKEN }}
+        github-pat: "${{ secrets.GITHUB_TOKEN }}"
 
     ############################################################################
 
@@ -90,7 +90,7 @@ jobs:
       uses: aquasecurity/tfsec-pr-commenter-action@7a44c5dcde5dfab737363e391800629e27b6376b # v1.3.1
       with:
         tfsec_args: --soft-fail
-        github_token: ${{ github.token }}
+        github_token: "${{ github.token }}"
 
     ############################################################################
 
@@ -112,7 +112,7 @@ jobs:
           -backend-config="resource_group_name=${{ vars.BACKEND_AZURE_RESOURCE_GROUP_NAME }}" \
           -backend-config="storage_account_name=${{ vars.BACKEND_AZURE_STORAGE_ACCOUNT_NAME }}" \
           -backend-config="container_name=${{ vars.BACKEND_AZURE_STORAGE_ACCOUNT_CONTAINER_NAME }}" \
-          -backend-config="key=${{ contains(github.event.pull_request.labels.*.name, 'dynamic') && vars.GITHUB_HEAD_REF || 'terraform' }}.tfstate"
+          -backend-config="key=${{ contains(github.event.pull_request.labels.*.name, 'dynamic') && github.head_ref || 'terraform' }}.tfstate"
 
     - name: Validate Terraform configurations
       run: |
@@ -179,7 +179,7 @@ jobs:
     uses: ./.github/workflows/deploy.yml
     with:
       environment: dynamic
-      backend-key: ${{vars.GITHUB_HEAD_REF }}
+      backend-key: "${{ github.head_ref }}"
 
   ##############################################################################
 
