@@ -7,6 +7,7 @@ on:
     types: [ opened, synchronize, edited, reopened ]
     branches: [ main ]
   workflow_dispatch:
+    branches: [ main ]
 
 concurrency:
   group: "${{ github.ref }}"
@@ -50,8 +51,8 @@ jobs:
         severity: 'CRITICAL'
 
     - name: Upload Trivy scan results (Git repo)
-      # https://github.com/github/codeql-action/releases
-      uses: github/codeql-action/upload-sarif@v2.16.4
+      # https://github.com/github/codeql-action/tags
+      uses: github/codeql-action/upload-sarif@v3.24.9
       with:
         sarif_file: 'trivy-results-fs.sarif'
 
