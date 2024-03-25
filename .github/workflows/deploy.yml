@@ -49,6 +49,5 @@ jobs:
       run: |
         terraform apply \
           -auto-approve \
-          -no-color \
           -input=false \
           -var "resource_group_name=${{vars.AZURE_RESOURCE_GROUP_NAME}}"
