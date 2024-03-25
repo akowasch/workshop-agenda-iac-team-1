@@ -19,7 +19,7 @@ permissions:
   security-events: write
 
 jobs:
-  analysis:
+  analyse:
     if: github.event_name == 'pull_request'
     name: Analyse Configuration
     environment: ${{ contains(github.event.pull_request.labels.*.name, 'dynamic') && 'dynamic'|| 'dev' }}
@@ -174,7 +174,7 @@ jobs:
 
   deploy-review:
     if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'dynamic')
-    name: deploy
+    name: Deploy Review
     needs: analysis
     uses: ./.github/workflows/deploy.yml
     with:
@@ -185,7 +185,7 @@ jobs:
 
   deploy-dev:
     if: github.event_name != 'pull_request'
-    name: deploy
+    name: Deploy Dev
     uses: ./.github/workflows/deploy.yml
     with:
       environment: dev
@@ -194,7 +194,7 @@ jobs:
 
   deploy-test:
     if: github.event_name != 'pull_request'
-    name: deploy
+    name: Deploy Test
     needs: deploy-dev
     uses: ./.github/workflows/deploy.yml
     with:
@@ -204,7 +204,7 @@ jobs:
 
   deploy-prod:
     if: github.event_name != 'pull_request'
-    name: deploy
+    name: Deploy Prod
     needs: deploy-test
     uses: ./.github/workflows/deploy.yml
     with:
