@@ -46,7 +46,6 @@ jobs:
         scan-type: fs
         format: sarif
         output: trivy-results-fs.sarif
-        # exit-code: '1'
         ignore-unfixed: true
         severity: CRITICAL
 
@@ -65,7 +64,6 @@ jobs:
         hide-progress: false
         format: sarif
         output: trivy-results-config.sarif
-        # exit-code: '1'
         ignore-unfixed: true
         severity: CRITICAL,HIGH
 
