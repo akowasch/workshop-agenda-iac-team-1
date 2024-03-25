@@ -24,10 +24,6 @@ jobs:
     name: Analyse Configuration
     environment: ${{ contains(github.event.pull_request.labels.*.name, 'dynamic') && 'dynamic'|| 'dev' }}
     runs-on: ubuntu-22.04
-    env:
-      ARM_CLIENT_ID: "${{ vars.AZURE_CLIENT_ID }}"
-      ARM_SUBSCRIPTION_ID: "${{ vars.AZURE_SUBSCRIPTION_ID }}"
-      ARM_TENANT_ID: "${{ vars.AZURE_TENANT_ID }}"
     steps:
 
     - name: Checkout Code
@@ -176,11 +172,6 @@ jobs:
     name: Deploy to Dynamic
     environment: dynamic
     runs-on: ubuntu-22.04
-    env:
-      ARM_CLIENT_ID: "${{ vars.AZURE_CLIENT_ID }}"
-      ARM_SUBSCRIPTION_ID: "${{ vars.AZURE_SUBSCRIPTION_ID }}"
-      ARM_TENANT_ID: "${{ vars.AZURE_TENANT_ID }}"
-      ARM_USE_AZUREAD: true
     steps:
 
     - name: Checkout Code
@@ -219,10 +210,6 @@ jobs:
     name: Deploy to Dev
     environment: dev
     runs-on: ubuntu-22.04
-    env:
-      ARM_CLIENT_ID: "${{ vars.AZURE_CLIENT_ID }}"
-      ARM_SUBSCRIPTION_ID: "${{ vars.AZURE_SUBSCRIPTION_ID }}"
-      ARM_TENANT_ID: "${{ vars.AZURE_TENANT_ID }}"
     steps:
 
     - name: Checkout Code
@@ -262,11 +249,6 @@ jobs:
     name: Deploy to Test
     environment: test
     runs-on: ubuntu-22.04
-    env:
-      ARM_CLIENT_ID: "${{ vars.AZURE_CLIENT_ID }}"
-      ARM_SUBSCRIPTION_ID: "${{ vars.AZURE_SUBSCRIPTION_ID }}"
-      ARM_TENANT_ID: "${{ vars.AZURE_TENANT_ID }}"
-      ARM_USE_AZUREAD: true
     steps:
 
     - name: Checkout Code
@@ -306,11 +288,6 @@ jobs:
     name: Deploy to Prod
     environment: prod
     runs-on: ubuntu-22.04
-    env:
-      ARM_CLIENT_ID: "${{ vars.AZURE_CLIENT_ID }}"
-      ARM_SUBSCRIPTION_ID: "${{ vars.AZURE_SUBSCRIPTION_ID }}"
-      ARM_TENANT_ID: "${{ vars.AZURE_TENANT_ID }}"
-      ARM_USE_AZUREAD: true
     steps:
 
     - name: Checkout Code
