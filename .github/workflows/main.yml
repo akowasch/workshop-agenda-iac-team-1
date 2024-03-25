@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: "${{ vars.ENVIRONMENT }}"
+  group: "${{ github.ref }}"
   cancel-in-progress: false
 
 permissions:
@@ -172,6 +172,7 @@ jobs:
 
   deploy-to-dynamic:
     if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'dynamic')
+    needs: analysis
     name: Deploy to Dynamic
     environment: dynamic
     runs-on: ubuntu-22.04
