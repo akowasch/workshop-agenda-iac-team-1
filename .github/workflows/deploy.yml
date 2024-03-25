@@ -1,0 +1,52 @@
+on:
+  workflow_call:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        type: string
+        required: true
+      backend-key:
+        description: 'Key of the storage account container to store the Terraform state file'
+        type: string
+        default: 'terraform'
+
+jobs:
+  deploy-prod:
+    runs-on: ubuntu-22.04
+    environment: "${{ inputs.environment }}"
+    env:
+      ARM_CLIENT_ID: "${{ vars.AZURE_CLIENT_ID }}"
+      ARM_SUBSCRIPTION_ID: "${{ vars.AZURE_SUBSCRIPTION_ID }}"
+      ARM_TENANT_ID: "${{ vars.AZURE_TENANT_ID }}"
+      ARM_USE_OIDC: true
+      ARM_USE_AZUREAD: true
+    steps:
+
+    - name: Checkout Code
+      # https://github.com/actions/checkout/releases
+      uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+
+    ############################################################################
+
+    - name: Setup Terraform
+      # https://github.com/hashicorp/setup-terraform/releases
+      uses: hashicorp/setup-terraform@a1502cd9e758c50496cc9ac5308c4843bcd56d36 # v3.0.0
+      with:
+        terraform_version: "1.7.5"
+
+    - name: Initialize Terraform working directory
+      run: |
+        terraform init \
+          -lockfile=readonly \
+          -backend-config="resource_group_name=${{vars.BACKEND_AZURE_RESOURCE_GROUP_NAME}}" \
+          -backend-config="storage_account_name=${{vars.BACKEND_AZURE_STORAGE_ACCOUNT_NAME}}" \
+          -backend-config="container_name=${{vars.BACKEND_AZURE_STORAGE_ACCOUNT_CONTAINER_NAME}}" \
+          -backend-config="key=${{ inputs.backend-key }}.tfstate"
+
+    - name: Apply Terraform execution plan
+      run: |
+        terraform apply \
+          -auto-approve \
+          -no-color \
+          -input=false \
+          -var "resource_group_name=${{vars.AZURE_RESOURCE_GROUP_NAME}}"

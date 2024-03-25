@@ -172,179 +172,40 @@ jobs:
 
   ##############################################################################
 
-  deploy-to-dynamic:
+  deploy-review:
     if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'dynamic')
+    name: Deploy / Review
     needs: analysis
-    name: Deploy to Dynamic
-    environment: dynamic
-    runs-on: ubuntu-22.04
-    env:
-      ARM_CLIENT_ID: "${{ vars.AZURE_CLIENT_ID }}"
-      ARM_SUBSCRIPTION_ID: "${{ vars.AZURE_SUBSCRIPTION_ID }}"
-      ARM_TENANT_ID: "${{ vars.AZURE_TENANT_ID }}"
-      ARM_USE_OIDC: true
-      ARM_USE_AZUREAD: true
-    steps:
-
-    - name: Checkout Code
-      # https://github.com/actions/checkout/releases
-      uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
-
-      ##############################################################################
-
-    - name: Setup Terraform
-      # https://github.com/hashicorp/setup-terraform/releases
-      uses: hashicorp/setup-terraform@a1502cd9e758c50496cc9ac5308c4843bcd56d36 # v3.0.0
-      with:
-        terraform_version: "1.7.5"
-
-    - name: Initialize Terraform working directory
-      run: |
-        terraform init \
-          -lockfile=readonly \
-          -backend-config="resource_group_name=${{vars.BACKEND_AZURE_RESOURCE_GROUP_NAME}}" \
-          -backend-config="storage_account_name=${{vars.BACKEND_AZURE_STORAGE_ACCOUNT_NAME}}" \
-          -backend-config="container_name=${{vars.BACKEND_AZURE_STORAGE_ACCOUNT_CONTAINER_NAME}}" \
-          -backend-config="key=${{ vars.GITHUB_HEAD_REF }}.tfstate"
-
-    - name: Apply Terraform execution plan
-      run: |
-        terraform apply \
-          -auto-approve \
-          -no-color \
-          -input=false \
-          -var "resource_group_name=${{vars.AZURE_RESOURCE_GROUP_NAME}}"
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: dynamic
+      backend-key: ${{vars.GITHUB_HEAD_REF }}
 
   ##############################################################################
 
-  deploy-to-dev:
+  deploy-dev:
     if: github.event_name != 'pull_request'
-    name: Deploy to Dev
-    environment: dev
-    runs-on: ubuntu-22.04
-    env:
-      ARM_CLIENT_ID: "${{ vars.AZURE_CLIENT_ID }}"
-      ARM_SUBSCRIPTION_ID: "${{ vars.AZURE_SUBSCRIPTION_ID }}"
-      ARM_TENANT_ID: "${{ vars.AZURE_TENANT_ID }}"
-      ARM_USE_OIDC: true
-      ARM_USE_AZUREAD: true
-    steps:
-
-    - name: Checkout Code
-      # https://github.com/actions/checkout/releases
-      uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
-
-    ############################################################################
-
-    - name: Setup Terraform
-      # https://github.com/hashicorp/setup-terraform/releases
-      uses: hashicorp/setup-terraform@a1502cd9e758c50496cc9ac5308c4843bcd56d36 # v3.0.0
-      with:
-        terraform_version: "1.7.5"
-
-    - name: Initialize Terraform working directory
-      run: |
-        terraform init \
-          -lockfile=readonly \
-          -backend-config="resource_group_name=${{vars.BACKEND_AZURE_RESOURCE_GROUP_NAME}}" \
-          -backend-config="storage_account_name=${{vars.BACKEND_AZURE_STORAGE_ACCOUNT_NAME}}" \
-          -backend-config="container_name=${{vars.BACKEND_AZURE_STORAGE_ACCOUNT_CONTAINER_NAME}}" \
-          -backend-config="key=terraform.tfstate"
-
-    - name: Apply Terraform execution plan
-      run: |
-        terraform apply \
-          -auto-approve \
-          -no-color \
-          -input=false \
-          -var "resource_group_name=${{vars.AZURE_RESOURCE_GROUP_NAME}}"
+    name: Deploy / Dev
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: dev
 
   ##############################################################################
 
-  deploy-to-test:
+  deploy-test:
     if: github.event_name != 'pull_request'
-    needs: deploy-to-dev
-    name: Deploy to Test
-    environment: test
-    runs-on: ubuntu-22.04
-    env:
-      ARM_CLIENT_ID: "${{ vars.AZURE_CLIENT_ID }}"
-      ARM_SUBSCRIPTION_ID: "${{ vars.AZURE_SUBSCRIPTION_ID }}"
-      ARM_TENANT_ID: "${{ vars.AZURE_TENANT_ID }}"
-      ARM_USE_OIDC: true
-      ARM_USE_AZUREAD: true
-    steps:
-
-    - name: Checkout Code
-      # https://github.com/actions/checkout/releases
-      uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
-
-    ############################################################################
-
-    - name: Setup Terraform
-      # https://github.com/hashicorp/setup-terraform/releases
-      uses: hashicorp/setup-terraform@a1502cd9e758c50496cc9ac5308c4843bcd56d36 # v3.0.0
-      with:
-        terraform_version: "1.7.5"
-
-    - name: Initialize Terraform working directory
-      run: |
-        terraform init \
-          -lockfile=readonly \
-          -backend-config="resource_group_name=${{vars.BACKEND_AZURE_RESOURCE_GROUP_NAME}}" \
-          -backend-config="storage_account_name=${{vars.BACKEND_AZURE_STORAGE_ACCOUNT_NAME}}" \
-          -backend-config="container_name=${{vars.BACKEND_AZURE_STORAGE_ACCOUNT_CONTAINER_NAME}}" \
-          -backend-config="key=terraform.tfstate"
-
-    - name: Apply Terraform execution plan
-      run: |
-        terraform apply \
-          -auto-approve \
-          -no-color \
-          -input=false \
-          -var "resource_group_name=${{vars.AZURE_RESOURCE_GROUP_NAME}}"
+    name: Deploy / Test
+    needs: deploy-dev
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: test
 
   ##############################################################################
 
-  deploy-to-prod:
+  deploy-prod:
     if: github.event_name != 'pull_request'
-    needs: deploy-to-test
-    name: Deploy to Prod
-    environment: prod
-    runs-on: ubuntu-22.04
-    env:
-      ARM_CLIENT_ID: "${{ vars.AZURE_CLIENT_ID }}"
-      ARM_SUBSCRIPTION_ID: "${{ vars.AZURE_SUBSCRIPTION_ID }}"
-      ARM_TENANT_ID: "${{ vars.AZURE_TENANT_ID }}"
-      ARM_USE_OIDC: true
-      ARM_USE_AZUREAD: true
-    steps:
-
-    - name: Checkout Code
-      # https://github.com/actions/checkout/releases
-      uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
-
-    ############################################################################
-
-    - name: Setup Terraform
-      # https://github.com/hashicorp/setup-terraform/releases
-      uses: hashicorp/setup-terraform@a1502cd9e758c50496cc9ac5308c4843bcd56d36 # v3.0.0
-      with:
-        terraform_version: "1.7.5"
-
-    - name: Initialize Terraform working directory
-      run: |
-        terraform init \
-          -lockfile=readonly \
-          -backend-config="resource_group_name=${{vars.BACKEND_AZURE_RESOURCE_GROUP_NAME}}" \
-          -backend-config="storage_account_name=${{vars.BACKEND_AZURE_STORAGE_ACCOUNT_NAME}}" \
-          -backend-config="container_name=${{vars.BACKEND_AZURE_STORAGE_ACCOUNT_CONTAINER_NAME}}" \
-          -backend-config="key=terraform.tfstate"
-
-    - name: Apply Terraform execution plan
-      run: |
-        terraform apply \
-          -auto-approve \
-          -no-color \
-          -input=false \
-          -var "resource_group_name=${{vars.AZURE_RESOURCE_GROUP_NAME}}"
+    name: Deploy / Prod
+    needs: deploy-test
+    uses: ./.github/workflows/deploy.yml
+    with:
+      environment: prod
