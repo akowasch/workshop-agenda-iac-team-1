@@ -174,6 +174,7 @@ jobs:
 
   deploy-review:
     if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'dynamic')
+    name: deploy
     needs: analysis
     uses: ./.github/workflows/deploy.yml
     with:
@@ -184,6 +185,7 @@ jobs:
 
   deploy-dev:
     if: github.event_name != 'pull_request'
+    name: deploy
     uses: ./.github/workflows/deploy.yml
     with:
       environment: dev
@@ -192,6 +194,7 @@ jobs:
 
   deploy-test:
     if: github.event_name != 'pull_request'
+    name: deploy
     needs: deploy-dev
     uses: ./.github/workflows/deploy.yml
     with:
@@ -201,6 +204,7 @@ jobs:
 
   deploy-prod:
     if: github.event_name != 'pull_request'
+    name: deploy
     needs: deploy-test
     uses: ./.github/workflows/deploy.yml
     with:

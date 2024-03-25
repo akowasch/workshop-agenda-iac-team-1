@@ -15,7 +15,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-22.04
-    name: "deploy / ${{ inputs.environment }}"
+    name: "${{ inputs.environment }}"
     environment: "${{ inputs.environment }}"
     env:
       ARM_CLIENT_ID: "${{ vars.AZURE_CLIENT_ID }}"
