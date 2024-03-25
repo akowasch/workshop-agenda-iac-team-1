@@ -175,7 +175,7 @@ jobs:
   deploy-review:
     if: github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'dynamic')
     name: Deploy Review
-    needs: analysis
+    needs: analyse
     uses: ./.github/workflows/deploy.yml
     with:
       environment: dynamic
