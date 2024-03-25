@@ -5,10 +5,14 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "3.97.1"
     }
+    tls = {
+      # https://github.com/hashicorp/terraform-provider-tls/releases
+      source  = "hashicorp/tls"
+      version = "4.0.5"
+    }
   }
 
-  backend "azurerm" {
-  }
+  backend "azurerm" {}
 }
 
 ################################################################################
