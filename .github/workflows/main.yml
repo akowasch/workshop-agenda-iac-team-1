@@ -89,10 +89,10 @@ jobs:
   prepare:
     if: github.event_name == 'pull_request'
     name: Prepare Configuration
-    environment: ${{ contains(github.event.pull_request.labels.*.name, 'dynamic') && 'dynamic'|| 'dev' }}
+    environment: "${{ contains(github.event.pull_request.labels.*.name, 'dynamic') && 'dynamic'|| 'dev' }}"
     runs-on: ubuntu-22.04
     concurrency:
-      group: "${{ github.ref }}"
+      group: "${{ contains(github.event.pull_request.labels.*.name, 'dynamic') && 'dynamic'|| 'dev' }}"
       cancel-in-progress: false
     env:
       ARM_CLIENT_ID: "${{ vars.AZURE_CLIENT_ID }}"
