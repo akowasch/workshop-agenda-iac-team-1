@@ -43,44 +43,46 @@ jobs:
       # https://github.com/aquasecurity/trivy-action/releases
       uses: aquasecurity/trivy-action@062f2592684a31eb3aa050cc61e7ca1451cecd3d # v0.18.0
       with:
-        scan-type: 'fs'
-        format: 'sarif'
-        output: 'trivy-results-fs.sarif'
+        scan-type: fs
+        format: sarif
+        output: trivy-results-fs.sarif
         # exit-code: '1'
         ignore-unfixed: true
-        severity: 'CRITICAL'
+        severity: CRITICAL
 
     - name: Upload Trivy scan results (Git repo)
       # https://github.com/github/codeql-action/tags
       uses: github/codeql-action/upload-sarif@v3.24.9
       with:
         sarif_file: 'trivy-results-fs.sarif'
+        category: trivy-fs
 
     - name: Run Trivy vulnerability scanner (IaC)
       # https://github.com/aquasecurity/trivy-action/releases
       uses: aquasecurity/trivy-action@062f2592684a31eb3aa050cc61e7ca1451cecd3d # v0.18.0
       with:
-        scan-type: 'config'
+        scan-type: config
         hide-progress: false
-        format: 'sarif'
-        output: 'trivy-results-config.sarif'
+        format: sarif
+        output: trivy-results-config.sarif
         # exit-code: '1'
         ignore-unfixed: true
-        severity: 'CRITICAL,HIGH'
+        severity: CRITICAL,HIGH
 
     - name: Upload Trivy scan results (IaC)
       # https://github.com/github/codeql-action/tags
       uses: github/codeql-action/upload-sarif@v3.24.9
       with:
-        sarif_file: 'trivy-results-config.sarif'
+        sarif_file: trivy-results-config.sarif
+        category: trivy-iac
 
     - name: Run Trivy SBOM generator
       # https://github.com/aquasecurity/trivy-action/releases
       uses: aquasecurity/trivy-action@062f2592684a31eb3aa050cc61e7ca1451cecd3d # v0.18.0
       with:
-        scan-type: 'fs'
-        format: 'github'
-        output: 'dependency-results.sbom.json'
+        scan-type: fs
+        format: github
+        output: dependency-results.sbom.json
         image-ref: '.'
         github-pat: ${{ secrets.GITHUB_TOKEN }}
 
