@@ -12,6 +12,11 @@ terraform {
       source  = "hashicorp/azurerm"
       version = "3.97.1"
     }
+    flux = {
+      # https://github.com/fluxcd/terraform-provider-flux/releases
+      source  = "fluxcd/flux"
+      version = "1.2.3"
+    }
     kubernetes = {
       # https://github.com/hashicorp/terraform-provider-kubernetes/releases
       source  = "hashicorp/kubernetes"
@@ -59,12 +64,12 @@ provider "azurerm" {
 
 ################################################################################
 
-# provider "kubernetes" {
-#   host                   = module.aks.host
-#   client_certificate     = base64decode(module.aks.client_certificate)
-#   client_key             = base64decode(module.aks.client_key)
-#   cluster_ca_certificate = base64decode(module.aks.cluster_ca_certificate)
-# }
+provider "kubernetes" {
+  host                   = module.aks.host
+  client_certificate     = base64decode(module.aks.client_certificate)
+  client_key             = base64decode(module.aks.client_key)
+  cluster_ca_certificate = base64decode(module.aks.cluster_ca_certificate)
+}
 
 ################################################################################
 
