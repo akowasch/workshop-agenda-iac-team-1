@@ -44,36 +44,6 @@ jobs:
 
   ##############################################################################
 
-  analyse-fs-trivy:
-    name: Analyse FS (Trivy)
-    runs-on: ubuntu-22.04
-    steps:
-
-    - name: Checkout Code
-      # https://github.com/actions/checkout/releases
-      uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
-
-    ############################################################################
-
-    - name: Run Trivy vulnerability scanner (FS)
-      # https://github.com/aquasecurity/trivy-action/releases
-      uses: aquasecurity/trivy-action@062f2592684a31eb3aa050cc61e7ca1451cecd3d # v0.18.0
-      with:
-        scan-type: fs
-        format: table # table, json, sarif
-        # output: trivy-fs-results.sarif
-        ignore-unfixed: true
-        severity: CRITICAL,HIGH
-
-    # - name: Upload Trivy scan results (Git repo)
-    #   # https://github.com/github/codeql-action/tags
-    #   uses: github/codeql-action/upload-sarif@1b1aada464948af03b950897e5eb522f92603cc2 # v3.24.9
-    #   with:
-    #     sarif_file: 'trivy-fs-results.sarif'
-    #     category: trivy-fs
-
-  ##############################################################################
-
   analyse-iac-trivy:
     name: Analyse IaC (Trivy)
     runs-on: ubuntu-22.04
@@ -102,6 +72,36 @@ jobs:
     #   with:
     #     sarif_file: trivy-iac-results.sarif
     #     category: trivy-iac
+
+  ##############################################################################
+
+  analyse-fs-trivy:
+    name: Analyse FS (Trivy)
+    runs-on: ubuntu-22.04
+    steps:
+
+    - name: Checkout Code
+      # https://github.com/actions/checkout/releases
+      uses: actions/checkout@9bb56186c3b09b4f86b1c65136769dd318469633 # v4.1.2
+
+    ############################################################################
+
+    - name: Run Trivy vulnerability scanner (FS)
+      # https://github.com/aquasecurity/trivy-action/releases
+      uses: aquasecurity/trivy-action@062f2592684a31eb3aa050cc61e7ca1451cecd3d # v0.18.0
+      with:
+        scan-type: fs
+        format: table # table, json, sarif
+        # output: trivy-fs-results.sarif
+        ignore-unfixed: true
+        severity: CRITICAL,HIGH
+
+    # - name: Upload Trivy scan results (Git repo)
+    #   # https://github.com/github/codeql-action/tags
+    #   uses: github/codeql-action/upload-sarif@1b1aada464948af03b950897e5eb522f92603cc2 # v3.24.9
+    #   with:
+    #     sarif_file: 'trivy-fs-results.sarif'
+    #     category: trivy-fs
 
   ##############################################################################
 
@@ -191,6 +191,7 @@ jobs:
       # https://github.com/hashicorp/setup-terraform/releases
       uses: hashicorp/setup-terraform@a1502cd9e758c50496cc9ac5308c4843bcd56d36 # v3.0.0
       with:
+        # https://github.com/hashicorp/terraform/releases
         terraform_version: "1.7.5"
 
     - name: Check Terraform formatting
@@ -211,12 +212,13 @@ jobs:
     - name: Validate Terraform configurations
       id: validate
       run: |
-        terraform validate
+        terraform validate -no-color
 
     - name: Create Terraform execution plan
       id: plan
       run: |
         terraform plan \
+          -no-color \
           -input=false \
           -var "resource_group_name=${{vars.AZURE_RESOURCE_GROUP_NAME}}"
       continue-on-error: true
