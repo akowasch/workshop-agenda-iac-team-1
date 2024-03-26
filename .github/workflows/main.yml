@@ -60,17 +60,17 @@ jobs:
       uses: aquasecurity/trivy-action@062f2592684a31eb3aa050cc61e7ca1451cecd3d # v0.18.0
       with:
         scan-type: fs
-        format: sarif
-        output: trivy-fs-results.sarif
+        format: table # table, json, sarif
+        # output: trivy-fs-results.sarif
         ignore-unfixed: true
         severity: CRITICAL,HIGH
 
-    - name: Upload Trivy scan results (Git repo)
-      # https://github.com/github/codeql-action/tags
-      uses: github/codeql-action/upload-sarif@1b1aada464948af03b950897e5eb522f92603cc2 # v3.24.9
-      with:
-        sarif_file: 'trivy-fs-results.sarif'
-        category: trivy-fs
+    # - name: Upload Trivy scan results (Git repo)
+    #   # https://github.com/github/codeql-action/tags
+    #   uses: github/codeql-action/upload-sarif@1b1aada464948af03b950897e5eb522f92603cc2 # v3.24.9
+    #   with:
+    #     sarif_file: 'trivy-fs-results.sarif'
+    #     category: trivy-fs
 
   ##############################################################################
 
@@ -91,17 +91,17 @@ jobs:
       with:
         scan-type: config
         hide-progress: false
-        format: sarif
-        output: trivy-iac-results.sarif
+        format: table # table, json, sarif
+        # output: trivy-iac-results.sarif
         ignore-unfixed: true
         severity: CRITICAL,HIGH
 
-    - name: Upload Trivy scan results (IaC)
-      # https://github.com/github/codeql-action/tags
-      uses: github/codeql-action/upload-sarif@1b1aada464948af03b950897e5eb522f92603cc2 # v3.24.9
-      with:
-        sarif_file: trivy-iac-results.sarif
-        category: trivy-iac
+    # - name: Upload Trivy scan results (IaC)
+    #   # https://github.com/github/codeql-action/tags
+    #   uses: github/codeql-action/upload-sarif@1b1aada464948af03b950897e5eb522f92603cc2 # v3.24.9
+    #   with:
+    #     sarif_file: trivy-iac-results.sarif
+    #     category: trivy-iac
 
   ##############################################################################
 

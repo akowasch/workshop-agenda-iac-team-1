@@ -1,6 +1,6 @@
 module "aks" {
-  source  = "Azure/aks/azurerm"
-  version = "8.0.0"
+  # https://github.com/Azure/terraform-azurerm-aks/tags
+  source = "git::https://github.com/Azure/terraform-azurerm-aks.git?ref=a094a4deab23bebcd4dd8f64208514eb1a835482" # 8.0.0
 
   log_analytics_workspace_enabled = false
   os_disk_size_gb                 = 60
