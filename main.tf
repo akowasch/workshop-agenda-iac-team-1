@@ -2,18 +2,30 @@ terraform {
   required_version = ">=1.6"
 
   required_providers {
+    azapi = {
+      # https://github.com/Azure/terraform-provider-azapi/releases
+      source  = "Azure/azapi"
+      version = "1.12.1"
+    }
     azurerm = {
       # https://github.com/hashicorp/terraform-provider-azurerm/releases
       source  = "hashicorp/azurerm"
       version = "3.97.1"
     }
     kubernetes = {
+      # https://github.com/hashicorp/terraform-provider-kubernetes/releases
       source  = "hashicorp/kubernetes"
-      version = "2.22.0"
+      version = "2.27.0"
+    }
+    null = {
+      # https://github.com/hashicorp/terraform-provider-null/releases
+      source  = "hashicorp/null"
+      version = "3.2.2"
     }
     random = {
+      # https://github.com/hashicorp/terraform-provider-random/releases
       source  = "hashicorp/random"
-      version = "3.3.2"
+      version = "3.6.0"
     }
     tls = {
       # https://github.com/hashicorp/terraform-provider-tls/releases
